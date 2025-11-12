@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'screens/inicio_screen.dart';
 import 'screens/calendario_screen.dart';
 import 'screens/notificaciones_screen.dart';
@@ -15,25 +18,233 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String? _fotoPerfilUrl;
 
-  void _onItemTapped(int index) {
+  // Número de notificaciones no leídas
+  int _notificacionesNoLeidas = 0;
+  List<Map<String, dynamic>> _notificaciones = [];
+
+  final List<String> _titles = [
+    'Inicio',
+    'Calendario',
+    'Notificaciones',
+    'Registro',
+    'Perfil',
+    'Buscar'
+  ];
+
+  final List<Widget> _pages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarFotoPerfil();
+    _cargarNotificaciones();
+  }
+
+  Future<void> _cargarFotoPerfil() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists && doc.data()?['fotoPerfil'] != null) {
+          setState(() {
+            _fotoPerfilUrl = doc['fotoPerfil'];
+          });
+        }
+      }
+    } catch (e) {
+      print("Error al obtener foto de perfil: $e");
+    }
+  }
+
+  Future<void> _cargarNotificaciones() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('notificaciones')
+        .orderBy('creadaEn', descending: true)
+        .get();
+
+    final notifs = snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    final noLeidas = notifs.where((n) {
+      final leidos = List<String>.from(n['usuariosLeidos'] ?? []);
+      return !leidos.contains(user.uid);
+    }).toList();
+
     setState(() {
-      _selectedIndex = index;
+      _notificaciones = notifs;
+      _notificacionesNoLeidas = noLeidas.length;
     });
   }
 
-  List<Widget> get _pages => [
-    InicioScreen(onNavigate: _onItemTapped),
-    const CalendarioScreen(),
-    const NotificacionesScreen(),
-    const RegistroScreen(),
-    const PerfilScreen(),
-    const BuscarScreen(),
-  ];
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _pages.clear();
+    _pages.addAll([
+      InicioScreen(onNavigate: _onItemTapped),
+      const CalendarioScreen(),
+      const NotificacionesScreen(),
+      const RegistroScreen(),
+      const PerfilScreen(),
+      const BuscarScreen(),
+    ]);
+  }
+
+  void _onItemTapped(int index) async {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    // Si vamos a Notificaciones, marcamos como leídas
+    if (index == 2) {
+      await _marcarNotificacionesLeidas();
+    }
+  }
+
+  Future<void> _marcarNotificacionesLeidas() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+    final noLeidas = _notificaciones.where((n) {
+      final leidos = List<String>.from(n['usuariosLeidos'] ?? []);
+      return !leidos.contains(user.uid);
+    });
+
+    for (var notif in noLeidas) {
+      final docRef = FirebaseFirestore.instance
+          .collection('notificaciones')
+          .doc(notif['id']);
+      batch.update(docRef, {
+        'usuariosLeidos': FieldValue.arrayUnion([user.uid])
+      });
+    }
+
+    await batch.commit();
+
+    // 🔹 Actualizar lista en memoria
+    await _cargarNotificaciones();
+  }
+
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Sesión cerrada correctamente."),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error al cerrar sesión: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            _titles[_selectedIndex],
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_none, color: Colors.black),
+                  onPressed: () => _onItemTapped(2),
+                ),
+                if (_notificacionesNoLeidas > 0)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$_notificacionesNoLeidas',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: PopupMenuButton<String>(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                offset: const Offset(0, 40),
+                onSelected: (value) {
+                  if (value == 'logout') _logout();
+                },
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.red),
+                        SizedBox(width: 10),
+                        Text(
+                          'Cerrar sesión',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: _fotoPerfilUrl != null
+                      ? NetworkImage(_fotoPerfilUrl!)
+                      : null,
+                  child: _fotoPerfilUrl == null
+                      ? const Icon(Icons.person, color: Colors.white)
+                      : null,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
