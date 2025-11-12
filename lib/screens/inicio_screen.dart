@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'evento_detalle_screen.dart'; // 🔹 Importa tu pantalla de detalle
+import 'actividad_detalle_screen.dart';
 
 class InicioScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -35,7 +37,10 @@ class _InicioScreenState extends State<InicioScreen> {
       if (data['fecha_inicio'] != null && data['fecha_inicio'] is Timestamp) {
         final fecha = (data['fecha_inicio'] as Timestamp).toDate();
         if (fecha.isAfter(now)) {
-          proximas.add(data);
+          proximas.add({
+            ...data,
+            'id': doc.id,  // 🔹 Guardar el ID
+          });
         }
       }
     }
@@ -47,7 +52,6 @@ class _InicioScreenState extends State<InicioScreen> {
     });
 
     setState(() {
-      // solo las 2 primeras
       actividadesDestacadas = proximas.take(2).toList();
     });
   }
@@ -139,7 +143,6 @@ class _InicioScreenState extends State<InicioScreen> {
             ),
             const SizedBox(height: 10),
 
-            // 🔹 Cards horizontales
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -148,16 +151,30 @@ class _InicioScreenState extends State<InicioScreen> {
                     : actividadesDestacadas.map((act) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 16.0),
-                    child: _ActividadCard(
-                      imageUrl: act['foto'] ?? '',
-                      titulo: act['nombre'] ?? '',
-                      descripcion: act['descripcion'] ?? '',
-                      categoria: act['categoria'] ?? '',
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ActividadDetalleScreen(
+                              actividadData: act,       // Pasamos toda la data
+                              actividadId: act['id'],   // 🔹 Asegúrate de guardar el ID en la lista
+                            ),
+                          ),
+                        );
+                      },
+                      child: _ActividadCard(
+                        imageUrl: act['foto'] ?? '',
+                        titulo: act['nombre'] ?? '',
+                        descripcion: act['descripcion'] ?? '',
+                        categoria: act['categoria'] ?? '',
+                      ),
                     ),
                   );
                 }).toList(),
               ),
             ),
+
 
             const SizedBox(height: 25),
 
@@ -186,13 +203,23 @@ class _InicioScreenState extends State<InicioScreen> {
                   : proximosEventos.map((ev) {
                 final fecha = (ev['fecha'] as Timestamp).toDate();
                 final diaStr = DateFormat('d MMMM', 'es_ES').format(fecha);
-                return _EventoItem(
-                  hora: ev['horaInicio'] ?? '',
-                  titulo: ev['titulo'] ?? '',
-                  lugar: ev['ubicacion'] ?? '',
-                  categoria: ev['categoria'] ?? '',
-                  icono: _iconoCategoria(ev['categoria'] ?? ''),
-                  dia: diaStr,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EventoDetalleScreen(evento: ev),
+                      ),
+                    );
+                  },
+                  child: _EventoItem(
+                    hora: ev['horaInicio'] ?? '',
+                    titulo: ev['titulo'] ?? '',
+                    lugar: ev['ubicacion'] ?? '',
+                    categoria: ev['categoria'] ?? '',
+                    icono: _iconoCategoria(ev['categoria'] ?? ''),
+                    dia: diaStr,
+                  ),
                 );
               }).toList(),
             ),

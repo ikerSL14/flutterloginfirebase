@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import 'actividad_detalle_screen.dart'; // Importa la pantalla de detalle
+
 class RegistroScreen extends StatelessWidget {
   const RegistroScreen({super.key});
 
@@ -66,7 +68,22 @@ class RegistroScreen extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final doc = actividades[index];
                         final data = doc.data() as Map<String, dynamic>;
-                        return _ActividadCard(data: data, id: doc.id);
+
+                        // 🔹 Abrir detalle al tocar
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ActividadDetalleScreen(
+                                  actividadData: data,
+                                  actividadId: doc.id,
+                                ),
+                              ),
+                            );
+                          },
+                          child: _ActividadCard(data: data, id: doc.id),
+                        );
                       },
                     );
                   },
@@ -99,34 +116,23 @@ class _ActividadCard extends StatelessWidget {
       return;
     }
 
-    // 📥 Obtener datos del usuario desde la colección 'users'
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
+    // 📥 Obtener datos del usuario
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     final userData = userDoc.data();
     final nombreUsuario = userData != null
         ? '${userData['nombre']} ${userData['apellido_paterno']} ${userData['apellido_materno']}'
         : 'Sin nombre';
-
 
     final docRef = FirebaseFirestore.instance.collection('actividades').doc(idActividad);
     final doc = await docRef.get();
     final data = doc.data() as Map<String, dynamic>?;
 
     final List inscritos = data?['inscritos'] ?? [];
+    final bool yaInscrito = inscritos.any((item) => item['uid'] == user.uid);
 
-    // Verificar si ya está inscrito
-    final bool yaInscrito = inscritos.any((item) =>
-    item is Map<String, dynamic> && item['uid'] == user.uid);
-
-    if (yaInscrito) {
-      return; // Ya está inscrito
-    }
+    if (yaInscrito) return;
 
     try {
-      // Guardar tanto UID como nombre del alumno
       await docRef.update({
         'inscritos': FieldValue.arrayUnion([
           {'uid': user.uid, 'nombre': nombreUsuario, 'estado': 'en_curso'}
@@ -157,6 +163,8 @@ class _ActividadCard extends StatelessWidget {
         return Icons.sports_soccer;
       case 'Cultural':
         return Icons.theater_comedy;
+      case 'Social':
+        return Icons.people;
       default:
         return Icons.event;
     }
@@ -166,11 +174,7 @@ class _ActividadCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final List inscritos = data['inscritos'] ?? [];
-
-    // Verificar si el usuario está inscrito
-    final bool inscrito = user != null &&
-        inscritos.any((item) =>
-        item is Map<String, dynamic> && item['uid'] == user.uid);
+    final bool inscrito = user != null && inscritos.any((item) => item['uid'] == user.uid);
 
     return Card(
       color: Colors.white,
@@ -205,8 +209,6 @@ class _ActividadCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-
-            // Categoría con ícono
             Row(
               children: [
                 Icon(
@@ -221,7 +223,6 @@ class _ActividadCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 6),
             Row(
               children: [
@@ -229,8 +230,7 @@ class _ActividadCard extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   data['fecha_inicio'] != null && data['fecha_inicio'] is Timestamp
-                      ? DateFormat('d MMMM yyyy', 'es_ES')
-                      .format((data['fecha_inicio'] as Timestamp).toDate())
+                      ? DateFormat('d MMMM yyyy', 'es_ES').format((data['fecha_inicio'] as Timestamp).toDate())
                       : '',
                   style: const TextStyle(color: Colors.grey),
                 ),
@@ -262,8 +262,6 @@ class _ActividadCard extends StatelessWidget {
               style: const TextStyle(color: Colors.black87),
             ),
             const SizedBox(height: 14),
-
-            // 🔘 Botón dinámico
             Center(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(

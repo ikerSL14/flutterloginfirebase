@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'evento_detalle_screen.dart';
 
 class BuscarScreen extends StatefulWidget {
   const BuscarScreen({super.key});
@@ -187,7 +188,8 @@ class _BuscarScreenState extends State<BuscarScreen> {
 
   Widget _eventoCard(Map<String, dynamic> e) {
     final fecha = e['fecha'] != null
-        ? DateFormat('dd/MM/yyyy').format((e['fecha'] as Timestamp).toDate())
+        ? DateFormat('dd/MM/yyyy').format(
+        (e['fecha'] is Timestamp) ? (e['fecha'] as Timestamp).toDate() : e['fecha'])
         : '';
     final horaInicio = e['horaInicio'] ?? '';
     final horaFin = e['horaFin'] ?? '';
@@ -210,98 +212,122 @@ class _BuscarScreenState extends State<BuscarScreen> {
       }
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Imagen o ícono
-          foto.isNotEmpty
-              ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              foto,
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholderIcon(categoria),
-            ),
-          )
-              : _placeholderIcon(categoria),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  e['titulo'] ?? '',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                // Badge categoría
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(8),
+    Widget _placeholderIcon(String categoria) {
+      return Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.green.shade100,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          _iconoCategoria(categoria),
+          color: Colors.green.shade800,
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // 🔹 Navegar a la pantalla de detalle enviando el evento completo
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EventoDetalleScreen(evento: e),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Imagen o ícono
+            foto.isNotEmpty
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                foto,
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholderIcon(categoria),
+              ),
+            )
+                : _placeholderIcon(categoria),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    e['titulo'] ?? '',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min, // 🔹 Esto hace que el Row sea "compacto"
-                    children: [
-                      Icon(
-                        _iconoCategoria(categoria),
-                        size: 14,
-                        color: Colors.green.shade800,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        categoria,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green.shade800, // 🔹 Aquí funciona sin error
+                  const SizedBox(height: 4),
+                  // Badge categoría
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _iconoCategoria(categoria),
+                          size: 14,
+                          color: Colors.green.shade800,
                         ),
-                      ),
+                        const SizedBox(width: 4),
+                        Text(
+                          categoria,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 14, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Text(fecha),
                     ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today,
-                        size: 14, color: Colors.green),
-                    const SizedBox(width: 4),
-                    Text(fecha),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.access_time,
-                        size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text('$horaInicio - $horaFin'),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on,
-                        size: 14, color: Colors.green),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(ubicacion)),
-                  ],
-                ),
-              ],
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text('$horaInicio - $horaFin'),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 14, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Expanded(child: Text(ubicacion)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _placeholderIcon(String categoria) {
     return Container(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'actividad_detalle_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -42,6 +43,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         final actData = doc.data() as Map<String, dynamic>;
         final estado = inscrito['estado'] ?? 'en_curso';
         actData['estadoUsuario'] = estado;
+        actData['id'] = doc.id; // 🔹 Importante para pasar a detalle
 
         if (estado == 'en_curso') {
           inscritas.add(actData);
@@ -78,74 +80,92 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final colorBg = terminado ? Colors.grey.shade300 : Colors.green.shade700;
     final colorText = terminado ? Colors.grey.shade800 : Colors.white;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(_iconoCategoria(act['categoria'] ?? ''), color: terminado ? Colors.grey : Colors.green.shade700, size: 36),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                act['nombre'] ?? '',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: terminado ? Colors.grey.shade800 : Colors.black,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 14, color: Colors.grey.shade700),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${act['hora_inicio'] ?? ''} - ${act['hora_fin'] ?? ''}',
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-                      ),
-                    ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ActividadDetalleScreen(
+              actividadData: act,
+              actividadId: act['id'], // 🔹 Asegúrate de tener el ID en act
+            ),
+          ),
+        );
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            _iconoCategoria(act['categoria'] ?? ''),
+            color: terminado ? Colors.grey : Colors.green.shade700,
+            size: 36,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  act['nombre'] ?? '',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: terminado ? Colors.grey.shade800 : Colors.black,
                   ),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
                       children: [
-                        Icon(Icons.location_on, size: 14, color: Colors.grey.shade700),
+                        Icon(Icons.access_time, size: 14, color: Colors.grey.shade700),
                         const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(
-                            act['ubicacion'] ?? '',
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          '${act['hora_inicio'] ?? ''} - ${act['hora_fin'] ?? ''}',
+                          style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(Icons.location_on, size: 14, color: Colors.grey.shade700),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              act['ubicacion'] ?? '',
+                              style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: colorBg,
-            borderRadius: BorderRadius.circular(12),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              estado.toUpperCase(),
+              style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
           ),
-          child: Text(
-            estado.toUpperCase(),
-            style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 12),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
