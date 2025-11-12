@@ -18,9 +18,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  String? _fotoPerfilUrl;
+  String? _nombreUsuario; // solo la inicial
 
-  // Número de notificaciones no leídas
   int _notificacionesNoLeidas = 0;
   List<Map<String, dynamic>> _notificaciones = [];
 
@@ -38,27 +37,29 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarFotoPerfil();
+    _cargarNombreUsuario();
     _cargarNotificaciones();
   }
 
-  Future<void> _cargarFotoPerfil() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
+  Future<void> _cargarNombreUsuario() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
         final doc = await FirebaseFirestore.instance
-            .collection('usuarios')
+            .collection('users')
             .doc(user.uid)
             .get();
-
-        if (doc.exists && doc.data()?['fotoPerfil'] != null) {
+        if (doc.exists) {
           setState(() {
-            _fotoPerfilUrl = doc['fotoPerfil'];
+            _nombreUsuario = doc.data()?['nombre'] ?? '?';
           });
         }
+      } catch (e) {
+        print("Error al obtener nombre de usuario: $e");
+        setState(() {
+          _nombreUsuario = '?';
+        });
       }
-    } catch (e) {
-      print("Error al obtener foto de perfil: $e");
     }
   }
 
@@ -66,26 +67,30 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final snapshot = await FirebaseFirestore.instance
-        .collection('notificaciones')
-        .orderBy('creadaEn', descending: true)
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('notificaciones')
+          .orderBy('creadaEn', descending: true)
+          .get();
 
-    final notifs = snapshot.docs.map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return data;
-    }).toList();
+      final notifs = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
 
-    final noLeidas = notifs.where((n) {
-      final leidos = List<String>.from(n['usuariosLeidos'] ?? []);
-      return !leidos.contains(user.uid);
-    }).toList();
+      final noLeidas = notifs.where((n) {
+        final leidos = List<String>.from(n['usuariosLeidos'] ?? []);
+        return !leidos.contains(user.uid);
+      }).toList();
 
-    setState(() {
-      _notificaciones = notifs;
-      _notificacionesNoLeidas = noLeidas.length;
-    });
+      setState(() {
+        _notificaciones = notifs;
+        _notificacionesNoLeidas = noLeidas.length;
+      });
+    } catch (e) {
+      print("Error al cargar notificaciones: $e");
+    }
   }
 
   @override
@@ -107,7 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIndex = index;
     });
 
-    // Si vamos a Notificaciones, marcamos como leídas
     if (index == 2) {
       await _marcarNotificacionesLeidas();
     }
@@ -133,8 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await batch.commit();
-
-    // 🔹 Actualizar lista en memoria
     await _cargarNotificaciones();
   }
 
@@ -232,13 +234,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: _fotoPerfilUrl != null
-                      ? NetworkImage(_fotoPerfilUrl!)
-                      : null,
-                  child: _fotoPerfilUrl == null
-                      ? const Icon(Icons.person, color: Colors.white)
-                      : null,
+                  backgroundColor: Colors.green.shade100,
+                  child: Text(
+                    _nombreUsuario != null && _nombreUsuario!.isNotEmpty
+                        ? _nombreUsuario![0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -265,3 +271,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

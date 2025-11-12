@@ -173,20 +173,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final fotoPerfilUrl = (userData!['fotoPerfil'] != null && userData!['fotoPerfil'] != '')
-        ? userData!['fotoPerfil']
-        : null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // 🔹 Foto de perfil
+          // 🔹 Foto de perfil como inicial
           CircleAvatar(
             radius: 50,
-            backgroundColor: Colors.grey.shade300,
-            backgroundImage: fotoPerfilUrl != null ? NetworkImage(fotoPerfilUrl) : null,
-            child: fotoPerfilUrl == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
+            backgroundColor: Colors.green.shade100,
+            child: Text(
+              (userData!['nombre'] != null && userData!['nombre'].isNotEmpty)
+                  ? userData!['nombre'][0].toUpperCase()
+                  : '?',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade700,
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           // 🔹 Nombre completo
