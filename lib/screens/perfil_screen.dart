@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'actividad_detalle_screen.dart';
+import 'editar_perfil_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
-  const PerfilScreen({super.key});
+  final VoidCallback? onProfileUpdated; // 💡 Nuevo parámetro
+
+  const PerfilScreen({super.key, this.onProfileUpdated}); // 💡 Agregado al constructor
 
   @override
   State<PerfilScreen> createState() => _PerfilScreenState();
@@ -211,7 +214,20 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditarPerfilScreen(userData: userData!),
+                ),
+              ).then((actualizado) {
+                if (actualizado == true) {
+                  _cargarDatosUsuario(); // 🔄 Recarga datos si el usuario guardó cambios
+                  // 💡 LLAMAR AL CALLBACK DEL PADRE (HomeScreen)
+                  widget.onProfileUpdated?.call();
+                }
+              });
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green.shade700,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),

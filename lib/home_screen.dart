@@ -93,6 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _recargarInicialesUsuario() {
+    _cargarNombreUsuario(); // Esta es la función que actualiza el estado en HomeScreen
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -102,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const CalendarioScreen(),
       const NotificacionesScreen(),
       const RegistroScreen(),
-      const PerfilScreen(),
+      PerfilScreen(onProfileUpdated: _recargarInicialesUsuario), // 💡 Pasar el callback
       const BuscarScreen(),
     ]);
   }
@@ -115,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index == 2) {
       await _marcarNotificacionesLeidas();
     }
+
   }
 
   Future<void> _marcarNotificacionesLeidas() async {
