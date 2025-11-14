@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// 💡 Imports que faltaban en la vista anterior
 import 'screens/inicio_screen.dart';
 import 'screens/calendario_screen.dart';
 import 'screens/notificaciones_screen.dart';
@@ -23,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _notificacionesNoLeidas = 0;
   List<Map<String, dynamic>> _notificaciones = [];
 
+  // 💡 Lista de Títulos completa
   final List<String> _titles = [
     'Inicio',
     'Calendario',
@@ -50,15 +52,21 @@ class _HomeScreenState extends State<HomeScreen> {
             .doc(user.uid)
             .get();
         if (doc.exists) {
-          setState(() {
-            _nombreUsuario = doc.data()?['nombre'] ?? '?';
-          });
+          // 💡 SOLUCIÓN setState 1: Comprobar si el widget sigue "montado"
+          if (mounted) {
+            setState(() {
+              _nombreUsuario = doc.data()?['nombre'] ?? '?';
+            });
+          }
         }
       } catch (e) {
         print("Error al obtener nombre de usuario: $e");
-        setState(() {
-          _nombreUsuario = '?';
-        });
+        // 💡 SOLUCIÓN setState 2: Comprobar si el widget sigue "montado"
+        if (mounted) {
+          setState(() {
+            _nombreUsuario = '?';
+          });
+        }
       }
     }
   }
@@ -68,26 +76,32 @@ class _HomeScreenState extends State<HomeScreen> {
     if (user == null) return;
 
     try {
+      // 💡 Query de notificaciones completa
       final snapshot = await FirebaseFirestore.instance
           .collection('notificaciones')
           .orderBy('creadaEn', descending: true)
           .get();
 
+      // 💡 Lógica de mapeo completa
       final notifs = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return data;
       }).toList();
 
+      // 💡 Lógica de filtro completa
       final noLeidas = notifs.where((n) {
         final leidos = List<String>.from(n['usuariosLeidos'] ?? []);
         return !leidos.contains(user.uid);
       }).toList();
 
-      setState(() {
-        _notificaciones = notifs;
-        _notificacionesNoLeidas = noLeidas.length;
-      });
+      // 💡 SOLUCIÓN setState 3: Comprobar si el widget sigue "montado"
+      if (mounted) {
+        setState(() {
+          _notificaciones = notifs;
+          _notificacionesNoLeidas = noLeidas.length;
+        });
+      }
     } catch (e) {
       print("Error al cargar notificaciones: $e");
     }
@@ -96,10 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _recargarInicialesUsuario() {
     _cargarNombreUsuario(); // Esta es la función que actualiza el estado en HomeScreen
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _pages.clear();
+    // 💡 Lista de Páginas completa
     _pages.addAll([
       InicioScreen(onNavigate: _onItemTapped),
       const CalendarioScreen(),
@@ -118,7 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index == 2) {
       await _marcarNotificacionesLeidas();
     }
-
   }
 
   Future<void> _marcarNotificacionesLeidas() async {
@@ -126,11 +141,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (user == null) return;
 
     final batch = FirebaseFirestore.instance.batch();
+    // 💡 Lógica de filtro completa
     final noLeidas = _notificaciones.where((n) {
       final leidos = List<String>.from(n['usuariosLeidos'] ?? []);
       return !leidos.contains(user.uid);
     });
 
+    // 💡 Lógica de batch completa
     for (var notif in noLeidas) {
       final docRef = FirebaseFirestore.instance
           .collection('notificaciones')
@@ -141,12 +158,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await batch.commit();
-    await _cargarNotificaciones();
+    _cargarNotificaciones();
   }
 
   Future<void> _logout() async {
     try {
       await FirebaseAuth.instance.signOut();
+      // El if (context.mounted) aquí es correcto
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -169,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 💡 Widget Build COMPLETO
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -275,4 +294,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

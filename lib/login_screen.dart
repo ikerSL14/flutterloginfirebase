@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'register_screen.dart';
-import 'auth_gate.dart';
+// import 'auth_gate.dart'; // No se necesita
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,17 +21,44 @@ class _LoginScreenState extends State<LoginScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inicio de sesión exitoso')),
-      );
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AuthGate()),
-            (route) => false,
-      );
+
+      // 🚨 CAMBIO CLAVE (Línea 32-38):
+      // ¡ELIMINADO! El SnackBar causa el error 'unmounted'
+      // porque AuthGate ya destruyó esta pantalla.
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Inicio de sesión exitoso')),
+      // );
+
+      // ¡ELIMINADO! AuthGate se encarga de la navegación.
+      // Navigator.of(context).pushAndRemoveUntil(
+      //   MaterialPageRoute(builder: (_) => const AuthGate()),
+      //       (route) => false,
+      // );
+
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No se encontró un usuario con ese correo.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Contraseña incorrecta.';
+      } else {
+        errorMessage = 'Error de autenticación: ${e.message}';
+      }
+
+      // 💡 BUENA PRÁCTICA:
+      // Comprobar si el widget sigue montado ANTES de mostrar
+      // el SnackBar de ERROR.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error inesperado: $e')),
+        );
+      }
     }
   }
 
@@ -55,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Stack(
           children: [
-            // ===== ICONOS DECORATIVOS =====
+            // ===== ICONOS DECORATIVOS (sin cambios) =====
             Positioned(
               top: 80,
               left: 30,
@@ -93,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.white.withOpacity(0.15), size: 55),
             ),
 
-            // ===== LOGO =====
+            // ===== LOGO (sin cambios) =====
             Align(
               alignment: Alignment.topCenter,
               child: Padding(
@@ -105,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // ===== CONTENEDOR BLANCO =====
+            // ===== CONTENEDOR BLANCO (sin cambios) =====
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
@@ -142,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 25),
 
-                        // ===== INPUT CORREO =====
+                        // ===== INPUT CORREO (sin cambios) =====
                         TextField(
                           controller: emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -156,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 15),
 
-                        // ===== INPUT CONTRASEÑA =====
+                        // ===== INPUT CONTRASEÑA (sin cambios) =====
                         TextField(
                           controller: passwordController,
                           obscureText: true,
@@ -170,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 25),
 
-                        // ===== BOTÓN ENTRAR =====
+                        // ===== BOTÓN ENTRAR (sin cambios) =====
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -196,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // ===== LINK REGISTRO =====
+                        // ===== LINK REGISTRO (sin cambios) =====
                         TextButton(
                           onPressed: () {
                             Navigator.push(
