@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Importamos los paquetes para las pantallas de administración (a crear)
+// Importamos los paquetes para las pantallas de administración
 import '../screens/placeholder_screen.dart';
 import '../screens/admin_inicio_screen.dart';
-import '../screens/admin_eventos_screen.dart'; // 💡 Importar la nueva pantalla de Eventos
-
-class AdminScreen extends StatefulWidget {
-  const AdminScreen({super.key});
-
-  @override
-  State<AdminScreen> createState() => _AdminScreenState();
-}
+import '../screens/admin_eventos_screen.dart';
+// 💡 Importar la nueva pantalla de Notificaciones
+import '../screens/admin_notificaciones_screen.dart';
+import '../screens/admin_actividades_screen.dart';
+import '../screens/admin_usuario_screen.dart';
 
 // 💡 Definimos los colores personalizados
 const Color _adminPrimaryColor = Color(0xFF07303B); // Azul/Verde muy oscuro
@@ -20,23 +17,32 @@ const Color _adminBackgroundColor = Color(0xFF052A35); // Fondo de pantalla más
 const Color _adminCardColor = Color(0xFF063945); // Color de los contenedores (para uso futuro)
 
 
+class AdminScreen extends StatefulWidget {
+  const AdminScreen({super.key});
+
+  @override
+  State<AdminScreen> createState() => _AdminScreenState();
+}
+
+
 class _AdminScreenState extends State<AdminScreen> {
   int _selectedIndex = 0;
 
   // 1. Definición de las pantallas internas del Administrador
   final List<Widget> _pages = [
     const AdminInicioScreen(),
-    const AdminEventosScreen(), // 💡 CAMBIO: Usamos AdminEventosScreen en el índice 1
-    const PlaceholderScreen(title: 'Notificaciones', color: _adminBackgroundColor),
-    const PlaceholderScreen(title: 'Actividades', color: _adminBackgroundColor),
-    const PlaceholderScreen(title: 'Usuarios', color: _adminBackgroundColor),
+    const AdminEventosScreen(),
+    // 💡 CAMBIO: Usamos AdminNotificacionesScreen en el índice 2
+    const AdminNotificacionesScreen(),
+    const AdminActividadesScreen(),
+    const AdminUsuarioScreen(),
   ];
 
   // 2. Definición de los títulos del AppBar
   final List<String> _titles = [
     'Inicio',
-    'Gestión de Eventos', // 💡 CAMBIO DE TÍTULO
-    'Notificaciones',
+    'Eventos',
+    'Notificaciones', // 💡 Título actualizado para Notificaciones
     'Actividades',
     'Usuarios',
   ];

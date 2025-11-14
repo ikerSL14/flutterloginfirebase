@@ -111,7 +111,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
         case 'evento':
           return Icons.event;
         case 'actividad':
-          return Icons.sports_soccer;
+          return Icons.local_activity;
         case 'terminacion':
           return Icons.celebration;
         default:
@@ -159,7 +159,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.sports_soccer,
+                            const Icon(Icons.category,
                                 size: 14, color: Colors.green),
                             const SizedBox(width: 4),
                             Text(categoria,
