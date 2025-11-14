@@ -5,9 +5,9 @@ import 'actividad_detalle_screen.dart';
 import 'editar_perfil_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
-  final VoidCallback? onProfileUpdated; // 💡 Nuevo parámetro
+  final VoidCallback? onProfileUpdated;
 
-  const PerfilScreen({super.key, this.onProfileUpdated}); // 💡 Agregado al constructor
+  const PerfilScreen({super.key, this.onProfileUpdated});
 
   @override
   State<PerfilScreen> createState() => _PerfilScreenState();
@@ -18,11 +18,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
   List<Map<String, dynamic>> actividadesInscritas = [];
   List<Map<String, dynamic>> historialParticipacion = [];
 
+  // Se ha removido toda la lógica de reloj y temporizador del sistema.
+
   @override
   void initState() {
     super.initState();
     _cargarDatosUsuario();
   }
+
+  // Se ha removido el método dispose ya que no hay suscripciones que cerrar.
 
   Future<void> _cargarDatosUsuario() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -36,7 +40,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final List<Map<String, dynamic>> historial = [];
 
     for (var doc in snapshot.docs) {
-      final inscritos = List<Map<String, dynamic>>.from(doc['inscritos'] ?? []);
+      // Usar List<dynamic> y luego cast seguro
+      final inscritosRaw = doc['inscritos'] ?? [];
+      final inscritos = List<Map<String, dynamic>>.from(
+          inscritosRaw.where((i) => i is Map<String, dynamic>).toList());
+
       final inscrito = inscritos.firstWhere(
             (i) => i['uid'] == user.uid,
         orElse: () => {},
@@ -44,14 +52,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
       if (inscrito.isNotEmpty) {
         final actData = doc.data() as Map<String, dynamic>;
-        final estado = inscrito['estado'] ?? 'en_curso';
-        actData['estadoUsuario'] = estado;
-        actData['id'] = doc.id; // 🔹 Importante para pasar a detalle
+        // Normalizamos el estado a minúsculas para una comparación robusta
+        final estadoUsuario = (inscrito['estado'] as String? ?? 'en_curso').toLowerCase();
 
-        if (estado == 'en_curso') {
-          inscritas.add(actData);
-        } else if (estado == 'terminado') {
+        actData['estadoUsuario'] = estadoUsuario;
+        actData['id'] = doc.id;
+
+        // ✅ LÓGICA DE HISTORIAL: Si el estado del USUARIO es 'terminado' o 'finalizado', va al historial.
+        if (estadoUsuario == 'terminado' || estadoUsuario == 'finalizado') {
           historial.add(actData);
+        } else {
+          // Si es 'en_curso' o cualquier otro, va a actividades inscritas.
+          inscritas.add(actData);
         }
       }
     }
@@ -79,7 +91,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Widget _buildActividad(Map<String, dynamic> act, {bool terminado = false}) {
-    final estado = terminado ? 'TERMINADO' : (act['estadoUsuario'] ?? 'EN_CURSO');
+    // Usamos el estado real del usuario para el texto si no está forzado a 'terminado'
+    final estadoDisplay = terminado
+        ? 'TERMINADO'
+        : (act['estadoUsuario'] as String? ?? 'en_curso').toUpperCase();
+
     final colorBg = terminado ? Colors.grey.shade300 : Colors.green.shade700;
     final colorText = terminado ? Colors.grey.shade800 : Colors.white;
 
@@ -160,7 +176,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              estado.toUpperCase(),
+              estadoDisplay,
               style: TextStyle(color: colorText, fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
@@ -176,6 +192,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Se ha removido la variable formattedDateTime
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -212,6 +229,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
             '${userData!['email'] ?? ''}',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
           ),
+
+          // Se ha removido el espacio y el widget Text para mostrar la hora del sistema.
+
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
@@ -223,7 +243,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ).then((actualizado) {
                 if (actualizado == true) {
                   _cargarDatosUsuario(); // 🔄 Recarga datos si el usuario guardó cambios
-                  // 💡 LLAMAR AL CALLBACK DEL PADRE (HomeScreen)
                   widget.onProfileUpdated?.call();
                 }
               });
