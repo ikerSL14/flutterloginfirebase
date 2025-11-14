@@ -39,11 +39,11 @@ class EventoDetalleScreen extends StatelessWidget {
     String _unsplashUrl(String cat) {
       switch (cat) {
         case 'Académico':
-          return 'https://images.unsplash.com/photo-1581091215360-0ec8aa2b0e0f?fit=crop&w=800&q=80';
+          return 'https://images.unsplash.com/photo-1530971013997-e06bb52a2372?q=80&w=796&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
         case 'Deportivo':
           return 'https://images.unsplash.com/photo-1521412644187-c49fa049e84d?fit=crop&w=800&q=80';
         case 'Social':
-          return 'https://images.unsplash.com/photo-1520975910063-03a184ab2b17?fit=crop&w=800&q=80';
+          return 'https://images.unsplash.com/photo-1556484687-30636164638b?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
         case 'Cultural':
           return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=800&q=80';
         default:
